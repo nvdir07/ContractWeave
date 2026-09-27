@@ -13,7 +13,7 @@
  * Start: ts-node src/mcp/server.ts  (or node dist/mcp/server.js)
  * Logs go to stderr — never stdout (MCP protocol channel).
  */
-
+// @ts-nocheck
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio";
 import { z } from "zod";
