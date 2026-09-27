@@ -1,0 +1,33 @@
+.wrapper { position: relative; }
+.svg {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  display: block;
+}
+.node { cursor: pointer; }
+.node:hover circle { stroke-width: 2.5 !important; }
+
+.detail {
+  position: absolute;
+  top: 12px; right: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  min-width: 220px;
+  max-width: 280px;
+}
+.close {
+  position: absolute; top: 8px; right: 10px;
+  background: none; border: none; color: var(--muted);
+  font-size: 14px; cursor: pointer;
+}
+.close:hover { color: var(--text); }
+.detailKind { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
+.detailLabel { font-weight: 600; font-size: 15px; margin-bottom: 10px; }
+.detailRow { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 6px; }
+.detailKey { font-size: 11px; color: var(--muted); width: 44px; flex-shrink: 0; padding-top: 1px; }
+.detailVal { font-size: 11px; color: var(--text); word-break: break-all; }

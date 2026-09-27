@@ -1,0 +1,46 @@
+/* Global styles */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #22263a;
+  --border: #2d3148;
+  --text: #e8eaf6;
+  --muted: #8b90b0;
+  --accent: #5c6ef5;
+  --accent-dim: #3d4fc4;
+  --breaking: #f04459;
+  --warning: #f5a623;
+  --info: #4db6e8;
+  --clean: #4caf83;
+  --font: -apple-system, "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Code", "Fira Code", "Consolas", monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button {
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 14px;
+}
+
+code, pre {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }

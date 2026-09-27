@@ -14,7 +14,10 @@
     "serve": "ts-node src/cli.ts serve",
     "test": "jest",
     "test:watch": "jest --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ui:dev": "cd web && npm run dev",
+    "ui:build": "cd web && npm install && npm run build",
+    "ui:preview": "cd web && npm run preview"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

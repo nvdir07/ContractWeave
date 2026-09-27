@@ -4,21 +4,35 @@ This file provides guidance to agents when working with code in this repository.
 
 ## Stack
 
-TypeScript 5 / Node.js 20 · CommonJS modules · strict mode · no bundler
-Dependencies: `zod`, `js-yaml`, `@modelcontextprotocol/sdk`, `express`, `commander`, `fast-glob`
-Test runner: Jest + ts-jest
+**Backend**: TypeScript 5 / Node.js 20 · CommonJS · strict mode · compiled to `dist/`
+**Frontend**: React 18 + Vite 5 · ESM · in `web/` subpackage (its own `package.json`)
+Backend deps: `zod`, `js-yaml`, `@modelcontextprotocol/sdk`, `express`, `commander`, `fast-glob`
+Frontend deps: `react`, `react-dom`, `react-router-dom` (in `web/package.json` only)
+Test runner: Jest + ts-jest (backend only)
 
 ## Commands
 
 ```sh
-npm install           # install deps
-npm run typecheck     # tsc --noEmit (run before every edit)
-npm test              # all tests
+# Backend
+npm install           # install backend deps
+npm run typecheck     # tsc --noEmit (run before every backend edit)
+npm test              # all backend tests
 npm test -- --testPathPattern tests/drift  # single test file
 npm run demo          # two-scene hackathon demo (no flags needed)
 npm run mcp           # start MCP server on stdio
-npm run serve         # start Orchestrate HTTP skill on :3333
+npm run serve         # start Orchestrate+API HTTP server on :3333
+
+# Frontend
+npm run ui:dev        # cd web && npm run dev  (Vite on :5173, proxies /api/* → :3333)
+npm run ui:build      # cd web && npm install && npm run build
+npm run ui:preview    # cd web && npm run preview
 ```
+
+## Two-server local dev
+
+Terminal 1: `npm run serve`   → Express API on :3333
+Terminal 2: `npm run ui:dev`  → Vite on :5173 (proxies /api/* to :3333)
+Browser: http://localhost:5173
 
 ## Architecture (non-obvious)
 
@@ -44,6 +58,16 @@ npm run serve         # start Orchestrate HTTP skill on :3333
 - OpenAPI: `js-yaml` load → canonicalize paths/schemas → SHA-256. Only `application/json` content-type is extracted.
 - Zod: regex over source text (no TS compiler). Extracts `z.object({...})` field names + optional/nullable flags. Works on `.ts` files containing `z.object`.
 - Jest: regex for `describe`/`it`/`test` string names — structural only.
+
+## Frontend architecture (non-obvious)
+
+- `web/` is a fully isolated subpackage — root `tsconfig.json` never includes `web/`. Running `tsc` or `jest` from root is 100% safe.
+- `web/src/types/contracts.ts` imports from `../../../src/graph/types` as type-only. Vite strips them at build time. Never add runtime values there.
+- The Vite proxy (`/api/* → localhost:3333`) is dev-only. In production (Vercel), `/api/*` routes to serverless functions in `api/`.
+- `POST /api/run-workflow` returns `WorkflowResult & { approvalToken, summaryMarkdown }` — not bare `WorkflowResult`. The extra fields come from `createReleaseApproval()`.
+- If LLM is unavailable, `/api/run-workflow` returns `{ status: "partial", result: ... }` with empty `explanations/repairs/verifications`. The frontend displays a warning banner.
+- State lives in `WorkflowContext` + `localStorage["contractweave:last-result"]`. No Redux, no Zustand.
+- CSS Modules only — no Tailwind, no PostCSS. Variables defined in `web/src/index.css` under `:root`.
 
 ## Key gotchas
 
