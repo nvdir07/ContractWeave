@@ -4,14 +4,21 @@
  * Single interface: complete(system, user) → string
  *
  * Runtime detection (checked at call time, not module load):
- *   - WATSONX_API_KEY + WATSONX_PROJECT_ID present → watsonx.ai
- *   - Otherwise → ollama at OLLAMA_URL
+ *   1. WATSONX_API_KEY + WATSONX_PROJECT_ID present → watsonx.ai (IBM cloud)
+ *   2. DEMO_LLM=true                                → demo (offline, no network)
+ *   3. Otherwise                                    → ollama at OLLAMA_URL
+ *
+ * The "demo" runtime is intended for offline hackathon demonstrations when
+ * neither watsonx.ai credentials nor a running Ollama instance are available.
+ * It generates deterministic, structured JSON from the supplied prompt so that
+ * the response references the actual finding/artifact rather than generic text.
+ * It never makes any network calls.
  *
  * No credentials are ever hardcoded.
- * Timeout: 60 seconds on all calls.
+ * Timeout: 60 seconds on watsonx/ollama calls. Demo returns synchronously.
  */
 
-export type LLMRuntimeKind = "watsonx" | "ollama";
+export type LLMRuntimeKind = "watsonx" | "ollama" | "demo";
 
 export interface LLMRuntime {
   complete(system: string, user: string): Promise<string>;
@@ -35,15 +42,69 @@ export function detectRuntime(): LLMRuntimeKind {
   if (process.env.WATSONX_API_KEY && process.env.WATSONX_PROJECT_ID) {
     return "watsonx";
   }
+  if (process.env.DEMO_LLM === "true") {
+    return "demo";
+  }
   return "ollama";
 }
 
 export async function complete(system: string, user: string): Promise<string> {
   const kind = detectRuntime();
-  if (kind === "watsonx") {
-    return watsonxComplete(system, user);
-  }
+  if (kind === "watsonx") return watsonxComplete(system, user);
+  if (kind === "demo") return demoComplete(user);
   return ollamaComplete(system, user);
+}
+
+// ---------------------------------------------------------------------------
+// demo — offline, deterministic, no network
+// ---------------------------------------------------------------------------
+
+/**
+ * Extracts the most contextually relevant tokens from the user prompt to
+ * populate the demo response fields. This makes responses feel grounded in
+ * the actual finding rather than completely generic.
+ */
+function demoComplete(user: string): Promise<string> {
+  // Pull the first "severity:" line, falling back to "BREAKING"
+  const severityMatch = user.match(/Severity:\s*(BREAKING|WARNING|INFO)/i);
+  const severity = (severityMatch?.[1]?.toUpperCase() ?? "BREAKING") as
+    "BREAKING" | "WARNING" | "INFO";
+
+  // Pull artifact kind and path from the prompt
+  const kindMatch = user.match(/Contract drift.*?in\s+(\S+)\s+at\s+(\S+)/i);
+  const artifactKind = kindMatch?.[1] ?? "contract";
+  const artifactPath = kindMatch?.[2]?.split(/[/\\]/).slice(-2).join("/") ?? "artifact";
+
+  // Pull the first listed change path for specificity
+  const changeLine = user.match(/(?:REMOVED|ADDED|CHANGED|TYPE-WIDENED|TYPE-NARROWED)\s+(\S+)/i);
+  const changedField = changeLine?.[1] ?? "a contract field";
+
+  const riskMap: Record<string, string> = {
+    BREAKING: "BREAKING",
+    WARNING:  "WARNING",
+    INFO:     "INFO",
+  };
+
+  const explanationMap: Record<string, string> = {
+    BREAKING: `The ${artifactKind} at ${artifactPath} has a breaking change: ${changedField} was removed or narrowed. Consumers that depend on this field will fail at runtime.`,
+    WARNING:  `The ${artifactKind} at ${artifactPath} has a non-breaking but risky change: ${changedField} was widened or made optional. Consumers relying on its presence may behave incorrectly.`,
+    INFO:     `The ${artifactKind} at ${artifactPath} has an additive change: ${changedField} was added. Existing consumers are unaffected but should be updated to use the new field.`,
+  };
+
+  const remediationMap: Record<string, string> = {
+    BREAKING: `Restore ${changedField} in the contract or update all consumers to handle its absence. Consider a versioned API migration if removal is intentional.`,
+    WARNING:  `Make ${changedField} required again, or ensure all consumers validate its presence before use. Update integration tests to cover the optional case.`,
+    INFO:     `No action required for existing consumers. Document the new field ${changedField} and update client types to take advantage of it.`,
+  };
+
+  const analysis = {
+    risk: riskMap[severity] ?? "BREAKING",
+    explanation: explanationMap[severity] ?? explanationMap["BREAKING"],
+    affectedContracts: [],
+    remediationRationale: remediationMap[severity] ?? remediationMap["BREAKING"],
+  };
+
+  return Promise.resolve(JSON.stringify(analysis));
 }
 
 // ---------------------------------------------------------------------------
