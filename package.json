@@ -1,0 +1,37 @@
+{
+  "name": "contractweave",
+  "version": "0.1.0",
+  "description": "Semantic contract-integrity system for TypeScript/Node.js projects",
+  "main": "dist/cli.js",
+  "bin": {
+    "contractweave": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/cli.ts",
+    "demo": "ts-node src/cli.ts demo",
+    "mcp": "ts-node src/mcp/server.ts",
+    "serve": "ts-node src/cli.ts serve",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "commander": "^12.1.0",
+    "express": "^4.19.2",
+    "fast-glob": "^3.3.2",
+    "js-yaml": "^4.1.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.12",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.14.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.2"
+  }
+}

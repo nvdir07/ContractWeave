@@ -1,0 +1,93 @@
+openapi: "3.0.3"
+info:
+  title: ContractWeave Skill
+  description: >
+    Semantic contract-drift detection and repair workflow for TypeScript/Node.js projects.
+    Analyzes OpenAPI, Zod schemas, and Jest tests for breaking changes, explains them with
+    watsonx.ai, proposes repairs, and generates release evidence.
+  version: "0.1.0"
+servers:
+  - url: http://localhost:3333
+    description: Local ContractWeave skill server
+
+paths:
+  /orchestrate/run-workflow:
+    post:
+      operationId: runContractWorkflow
+      summary: Run the full analyze→explain→repair→verify→evidence workflow
+      x-openai-isConsequential: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunWorkflowRequest"
+            examples:
+              natural_language:
+                summary: Natural language request
+                value:
+                  request: "check contracts at ./fixtures"
+              explicit_paths:
+                summary: Explicit path arrays
+                value:
+                  baselinePaths: ["fixtures/v1/openapi.yaml", "fixtures/v1/user.schema.ts"]
+                  currentPaths: ["fixtures/v2/openapi.yaml", "fixtures/v2/user.schema.ts"]
+      responses:
+        "200":
+          description: Workflow completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunWorkflowResponse"
+        "500":
+          description: Workflow error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          description: Service is healthy
+
+components:
+  schemas:
+    RunWorkflowRequest:
+      type: object
+      properties:
+        request:
+          type: string
+          description: Natural language description of what to check
+        baselinePaths:
+          type: array
+          items:
+            type: string
+          description: Baseline artifact file paths (v1)
+        currentPaths:
+          type: array
+          items:
+            type: string
+          description: Current artifact file paths (v2)
+
+    RunWorkflowResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, error]
+        result:
+          type: object
+          description: WorkflowResult containing report, explanations, repairs, verifications, evidence
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
